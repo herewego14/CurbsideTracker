@@ -1,0 +1,344 @@
+function Setup(){
+  //here's where you can change out the leadership team!, just make sure they're formatted the 
+  //same way, like
+  //              ->     "Name"    <-
+  //                                and then with commas in between, until the last one.
+  var teamCaps = ["Ari", "Caroline", "Curtis", "Daniel", "Laura", "Managers/CF", "Mat", "Orli", "Rachel", "Jeremy"];
+  
+  
+  var ui = SpreadsheetApp.getUi();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+  
+  
+  var teamC = ui.prompt("Is this page going to use TEAMS?\ny/n").getResponseText();
+  if(teamC == "y" || teamC == "Y"){
+    teamC = "d";
+    headerTeams(teamCaps);
+  }
+  else{
+    teamC = "c";
+    headerNoTeams(teamCaps);
+  }
+  
+  var startDate = ui.prompt("When do you want this page to start tracking?\nputting \"today\" works, otherwise, enter it like mm/dd\n (ex. 07/22)").getResponseText();
+  if(startDate == "today" || startDate == "Today" || startDate == "TODAY" ){
+    startDate = Utilities.formatDate(new Date(), "GMT+1", "MM/dd")
+  }
+  
+  var dateSep = seperateDate(startDate);
+  var daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  var dayC = ui.prompt("How many days do you want this contest to run?").getResponseText();
+  
+  var month = dateSep[0];
+  var day = dateSep[1];
+  for (var i = 0; i < dayC; i++){
+    //dates column
+    var headCellLabel = "H" + (15 + i);
+    var headCell = sheet.getRange(headCellLabel);
+    headCell.setValue(month + "/" + day);
+    
+    //LB counts column
+    headCellLabel = "J" + (15 + i);
+    headCell = sheet.getRange(headCellLabel);
+    headCell.setValue("=countif(" + teamC + "2:" + teamC + ", \"" + month + "/" + day + "\")");
+    
+    //% by day calculator column
+    headCellLabel = "K" + (15 + i);
+    headCell = sheet.getRange(headCellLabel);
+    headCell.setValue("=TO_PERCENT(J" + (15 + i) + "/I" + (15 + i) + ")");
+    
+    if(day >= daysInMonth[month-1]){
+      month++;
+      day = 0;
+      
+      if ( month == 13 ){ month = 1 }
+    }
+    day = Number(day) + 1;   
+  }    
+}
+
+function makeDataPage(teamsyn){
+  var headLetters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"];
+  var headData = ["PARTNER", "TEAM", "ISSUE", "DATE", "RESOLVED", "CUSTOMER INFO", "ITEMS / SLOT" ];
+  if (teamsyn == 'c'){
+    headData = ["PARTNER", "ISSUE", "DATE", "RESOLVED", "CUSTOMER INFO", "ITEMS / SLOT" ];
+  }
+  
+  var dataSheet = SpreadsheetApp.getActiveSpreadsheet();
+  dataSheet.insertSheet('Data');
+  
+  for (var i = 1; i < headData.length(); i++){
+    var headCellLabel = headLetters[i-1] + 1;
+    var headCell = sheet.getRange(headCellLabel);
+    headCell.setValue(headData[i-1]);
+  }
+}
+
+function headerTeams(teamCaps){
+  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+  var headData = ["PARTNER", "TEAM", "ISSUE", "DATE", "RESOLVED", "CUSTOMER INFO", "", "Current Sort:", "Teams:"];
+  var headLetters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"];
+  var headStatsData = ["Order Count:", "LBs By Day:", "% of LBs By Day:" ];
+  
+  for (var i = 1; i < 10; i++){
+    var headCellLabel = headLetters[i-1] + 1;
+    var headCell = sheet.getRange(headCellLabel);
+    headCell.setValue(headData[i-1]);
+  }
+  
+  for (var i = 2; i < (teamCaps.length + 2); i++){
+    var headCellLabel = "i" + i;
+    var headCell = sheet.getRange(headCellLabel);
+    headCell.setValue(teamCaps[i-2]);
+    
+    headCellLabel = "j" + i;
+    headCell = sheet.getRange(headCellLabel);
+    headCell.setValue("=countif(B:B, \"" + teamCaps[i-2] + "\")");
+  }
+  
+  for (var i = 8; i < 11; i++){
+    var headCellLabel = headLetters[i] + "14";
+    var headCell = sheet.getRange(headCellLabel);
+    headCell.setValue(headStatsData[i-8]);
+  }
+  
+  var headCellLabel = "A2";
+  var headCell = sheet.getRange(headCellLabel);
+  headCell.setValue("=Sort(Data!A2:F, 1, True)");
+}
+
+function headerNoTeams(teamCaps){
+  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+  var headData = ["PARTNER",  "ISSUE", "DATE", "RESOLVED", "CUSTOMER INFO", "", "", "Current Sort:"];
+  var headLetters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"];
+  var headStatsData = ["Order Count:", "LBs By Day:", "% of LBs By Day:" ];
+  
+  for (var i = 1; i < 8; i++){
+    var headCellLabel = headLetters[i-1] + 1;
+    var headCell = sheet.getRange(headCellLabel);
+    headCell.setValue(headData[i-1]);
+  }
+  
+  for (var i = 8; i < 11; i++){
+    var headCellLabel = headLetters[i] + "14";
+    var headCell = sheet.getRange(headCellLabel);
+    headCell.setValue(headStatsData[i-8]);
+  }
+  
+  var headCellLabel = "A2";
+  var headCell = sheet.getRange(headCellLabel);
+  headCell.setValue("=Sort(Data!A2:E, 1, True)");
+  
+}
+
+function seperateDate(startDate){
+  var month = startDate[0] + startDate[1];
+  var day = startDate[3] + startDate[4];
+  
+  var dateSep = [month, day];
+  return dateSep;
+}
+
+//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+//                              ^header^                             v adding lbs v
+//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+function addLB() {
+  var ui = SpreadsheetApp.getUi();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+  
+  sheet.insertRowAfter(getFirstEmptyRowByColumnArray()-1)
+  
+  var LBdata = ["", "", "", "", "", "", ""];
+  
+  //gets user data to plug into newly made row
+  LBdata[0] = ui.prompt("Enter Psoft # of partner\n(The one who had the left behind)").getResponseText();
+  LBdata[1] = ui.prompt("Enter Partner's LB Team").getResponseText();
+  LBdata[2] = ui.prompt("Enter type of issue\nLeft behind: LB\nWrong slot: WS\nShopper error: SE\nBagging error: BE").getResponseText();
+  LBdata[3] = ui.prompt("Enter Date of LB (mm/dd)").getResponseText();
+  LBdata[4] = ui.prompt("Is the issue resolved? y/n").getResponseText();
+  
+  var cusInfo1 = ui.prompt("Enter customer's Last name").getResponseText();
+  var cusInfo2 = LBdata[6] = ui.prompt("Enter the order number\nAlso, have they been contacted?").getResponseText();
+  LBdata[5] = cusInfo1 + "\n" + cusInfo2;
+  
+  LBdata[6] = ui.prompt("What items were left behind?\nIf it's labeled on the shelf, say so here\n(If it's the whole slot, just put the slot name)\n(Also, if it's already been refunded, you can leave this blank)").getResponseText();
+                        
+  //calls function to actually plug in the data
+  makeLB(sheet, LBdata);
+}
+
+function addLBNoTeams() {
+  var ui = SpreadsheetApp.getUi();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+  
+  sheet.insertRowAfter(getFirstEmptyRowByColumnArray()-1)
+  
+  var LBdata = ["", "", "", "", "", ""];
+  
+  //gets user data to plug into newly made row
+  LBdata[0] = ui.prompt("Enter Psoft # of partner\n(The one who had the left behind)").getResponseText();
+  
+  LBdata[1] = ui.prompt("Enter type of issue\nLeft behind: LB\nWrong slot: WS\nShopper error: SE\nBagging error: BE").getResponseText();
+  LBdata[2] = ui.prompt("Enter Date of LB (mm/dd)").getResponseText();
+  LBdata[3] = ui.prompt("Is the issue resolved? y/n").getResponseText();
+  
+  var cusInfo1 = ui.prompt("Enter customer's Last name").getResponseText();
+  var cusInfo2 = ui.prompt("Enter the order number\nAlso, have they been contacted?").getResponseText();
+  LBdata[4] = cusInfo1 + "\n" + cusInfo2;
+  
+  LBdata[5] = ui.prompt("What items were left behind?\nIf it's labeled on the shelf, say so here\n(If it's the whole slot, just put the slot name)\n(Also, if it's already been refunded, you can leave this blank)").getResponseText();
+                        
+  //calls function to actually plug in the data
+  makeLB(sheet, LBdata);
+}
+
+function makeLB(sheet, LBdata){
+  var firstE = getFirstEmptyRowByColumnArray();
+  
+  var columns = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g' ];
+  
+  for(var i = 0; i <7; i++){
+    var plsRange = columns[i] + firstE;
+    var range = sheet.getRange(plsRange);
+    range.setValue(LBdata[i]);
+  }
+}
+
+//copied from a search but finds the first empty row in column 'A'
+function getFirstEmptyRowByColumnArray() {
+  var spr = SpreadsheetApp.getActiveSpreadsheet();
+  var column = spr.getRange('A:A');
+  var values = column.getValues(); // get all data in one call
+  var ct = 0;
+  while ( values[ct] && values[ct][0] != "" ) {
+    ct++;
+  }
+  return (ct+1);
+}
+
+//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+//                              ^adding lbs^                             v sorting v
+//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+function sortTeams(){
+  var ui = SpreadsheetApp.getUi();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet(); 
+  var sortCell = sheet.getRange('A2');
+  
+  var choice = ui.prompt("What would you like to sort the sheet by?\nPartner: p\nTeam: t\nIssue: i\nDate: d\nResolved: r").getResponseText();
+  
+  switch (choice){
+    case "p":
+      sortCell.setValue("=Sort(Data!A2:F, 1, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Partner");
+      break;
+    case "P":
+      sortCell.setValue("=Sort(Data!A2:F, 1, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Partner");
+      break;
+      
+    case "t":
+      sortCell.setValue("=Sort(Data!A2:F, 2, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("LB Team");
+      break;
+    case "T":
+      sortCell.setValue("=Sort(Data!A2:F, 2, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("LB Team");
+      break;
+      
+    case "i":
+      sortCell.setValue("=Sort(Data!A2:F, 3, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Issue");
+      break;
+    case "I":
+      sortCell.setValue("=Sort(Data!A2:F, 3, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Issue");
+      break;
+      
+    case "d":
+      sortCell.setValue("=Sort(Data!A2:F, 4, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Date");
+      break;
+    case "D":
+      sortCell.setValue("=Sort(Data!A2:F, 4, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Date");
+      break;
+      
+    case "r":
+      sortCell.setValue("=Sort(Data!A2:F, 5, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Resolved");
+      break;
+    case "R":
+      sortCell.setValue("=Sort(Data!A2:F, 5, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Resolved");
+      break;
+      
+  }
+}
+
+function sortNoTeams(){
+  var ui = SpreadsheetApp.getUi();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet(); 
+  var sortCell = sheet.getRange('A2');
+  
+  var choice = ui.prompt("What would you like to sort the sheet by?\nPartner: p\nIssue: i\nDate: d\nResolved: r").getResponseText();
+  
+  switch (choice){
+    case "p":
+      sortCell.setValue("=Sort(Data!A2:E, 1, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Partner");
+      break;
+    case "P":
+      sortCell.setValue("=Sort(Data!A2:E, 1, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Partner");
+      break;
+      
+    case "i":
+      sortCell.setValue("=Sort(Data!A2:E, 2, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Issue");
+      break;
+    case "I":
+      sortCell.setValue("=Sort(Data!A2:E, 2, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Issue");
+      break;
+      
+    case "d":
+      sortCell.setValue("=Sort(Data!A2:E, 3, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Date");
+      break;
+    case "D":
+      sortCell.setValue("=Sort(Data!A2:E, 3, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Date");
+      break;
+      
+    case "r":
+      sortCell.setValue("=Sort(Data!A2:E, 4, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Resolved");
+      break;
+    case "R":
+      sortCell.setValue("=Sort(Data!A2:E, 4, True)");
+      sortCell = sheet.getRange('h2');
+      sortCell.setValue("Resolved");
+      break;
+      
+  }
+}
